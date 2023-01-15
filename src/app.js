@@ -70,6 +70,25 @@ server.get("/participants", async (req, res) => {
 
 //endpoint MESSAGES
 
+server.get("/messages", async (req,res) => {
+    const { limit } = req.query
+    const user = req.headers.user
+
+    try{
+        const messages = await db.collection("messages").find().toArray()
+        if(limit){
+            const filteredMessages = messages.filter((message, index) => index < limit)
+            return res.status(200).send(filteredMessages)
+        }
+        if(user){
+            const userMessages = messages.filter((m) => m.to === user || m.to === "Todos")
+            res.status(200).send(userMessages)    
+        }
+    }catch(err){
+        res.sendStatus(500)
+    }
+})
+
 server.listen(5000, () => {
     console.log("Servidor: http://localhost:5000")
 })
