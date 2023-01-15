@@ -17,9 +17,7 @@ let db
 try {
     await mongoClient.connect()
     db = mongoClient.db()
-} catch (error) {
-    console.log("Erro na conexão com o banco de dados")
-}
+} catch (error) { console.log("Erro na conexão com o banco de dados") }
 
 //endpoint PARTICIPANTS
 server.post("/participants", async (req, res) => {
@@ -69,51 +67,61 @@ server.get("/participants", async (req, res) => {
 })
 
 //endpoint MESSAGES
-server.post("/messages", async (req,res) => {
+server.post("/messages", async (req, res) => {
     const user = req.headers.user
-    const {to , text, type} = req.body
+    const { to, text, type } = req.body
     const messageSchema = joi.object({
         to: joi.string().required(),
         text: joi.string().required(),
         type: joi.any().valid('message', 'private_message')
     })
-    const validation = messageSchema.validate({to, text, type})
+    const validation = messageSchema.validate({ to, text, type })
 
-    if (validation.error){
+    if (validation.error) {
         const errors = validation.error.details.map((detail) => detail.message)
         return res.status(422).send(errors)
     }
-    try{
+    try {
         await db.collection("messages").insertOne(
-            { from: user, to, text, type, time: dayjs().format('HH:mm:ss')}
+            { from: user, to, text, type, time: dayjs().format('HH:mm:ss') }
         )
-        res.sendStatus(201)    
-    } catch(err){
+        res.sendStatus(201)
+    } catch (err) {
         res.sendStatus(500)
     }
 })
 
-server.get("/messages", async (req,res) => {
+server.get("/messages", async (req, res) => {
     const { limit } = req.query
     const user = req.headers.user
 
-    try{
+    try {
         const messages = await db.collection("messages").find().toArray()
-        if(user){
+        if (user) {
             const userMessages = messages.filter((m) => m.to === user || m.to === "Todos")
-            return res.status(200).send(userMessages)    
+            return res.status(200).send(userMessages)
         }
-        if (limit && user){
-            const userLimitMessages = messages.filter((m, i) => (m.to === user || m.to === "Todos") && i < limit )
+        if (limit && user) {
+            const userLimitMessages = messages.filter((m, i) => (m.to === user || m.to === "Todos") && i < limit)
             return res.status(200).send(userLimitMessages)
         }
         console.log
-    }catch(err){
+    } catch (err) {
         res.sendStatus(500)
     }
 })
 
 //endpoint STATUS
+server.post("/status", async (req, res) => {
+    const username = req.headers.user
+    const user = await db.collection("participants").findOne({ name: username })
+    if (user) {
+        await db.collection("participants").updateOne({ name: username }, { $set: { lastStatus: Date.now() } })
+        return res.sendStatus(200)
+    } else {
+        return res.sendStatus(404)
+    }
+})
 
 server.listen(5000, () => {
     console.log("Servidor: http://localhost:5000")
