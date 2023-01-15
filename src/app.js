@@ -3,6 +3,7 @@ import cors from "cors"
 import { MongoClient } from "mongodb"
 import dotenv from "dotenv"
 import joi from 'joi'
+import dayjs from "dayjs"
 
 dotenv.config()
 
@@ -29,7 +30,7 @@ server.post("/participants", async (req, res) => {
     })
     const validation = participantSchema.validate({ name })
 
-    if (validation.error){
+    if (validation.error) {
         const errors = validation.error.details.map((detail) => detail.messsage)
         return res.status(422).send(errors)
     }
@@ -37,10 +38,20 @@ server.post("/participants", async (req, res) => {
     try {
         const participants = await db.collection("participants").find().toArray()
         const names = participants.map(p => p.name)
-        if (names.includes(name)){
-            res.status(409).send("nome já cadastrado!")
+
+        if (names.includes(name)) {
+            return res.sendStatus(409)
         }
-        await db.collection("participants").insertOne({ name : name, lastStatus: Date.now()})
+
+        await db.collection("participants").insertOne({ name: name, lastStatus: Date.now() })
+        await db.collection("messages").insertOne(
+            {
+                from: name,
+                to: 'Todos',
+                text: 'entra na sala...',
+                type: 'status',
+                time: dayjs().format('HH:mm:ss')
+            })
         res.sendStatus(201)
     } catch (error) {
         res.status(500)
