@@ -73,13 +73,17 @@ server.post("/messages", async (req, res) => {
     const messageSchema = joi.object({
         to: joi.string().required(),
         text: joi.string().required(),
-        type: joi.any().valid('message', 'private_message')
+        type: joi.any().valid('message', 'private_message').required()
     })
     const validation = messageSchema.validate({ to, text, type })
+    const participants = db.collection("participants").find().toArray()
+    const names = participants.map(p => p.name)
 
     if (validation.error) {
         const errors = validation.error.details.map((detail) => detail.message)
         return res.status(422).send(errors)
+    } else if (!(user || names.includes(user))){
+        return res.sendStatus(422)
     }
     try {
         await db.collection("messages").insertOne(
@@ -98,7 +102,7 @@ server.get("/messages", async (req, res) => {
     try {
         const messages = await db.collection("messages").find().toArray()
         if (user) {
-            const userMessages = messages.filter((m) => m.to === user || m.to === "Todos")
+            const userMessages = messages.filter((m) => m.to === user || m.to === "Todos" || m.from === user)
             return res.status(200).send(userMessages)
         }
         if (limit && user) {
