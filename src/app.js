@@ -109,10 +109,10 @@ server.get("/messages", async (req, res) => {
 
         if (user && isNameExist) {
             if (limit){
-                const userLimitMessages = reversed.filter((m, i) => (m.to === user || m.to === "Todos") && i < limit)
+                const userLimitMessages = messages.filter((m, i) => (m.to === user || m.to === "Todos") && i < limit)
                 return res.status(200).send(userLimitMessages)
             }
-            const userMessages = reversed.filter((m) => m.to === user || m.to === "Todos" || m.from === user)
+            const userMessages = messages.filter((m) => m.to === user || m.to === "Todos" || m.from === user)
             return res.status(200).send(userMessages)
         } else if (!user || !isNameExist){
             return res.sendStatus(422)
