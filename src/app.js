@@ -157,7 +157,7 @@ async function removeParticipants() {
     }
 }
 
-setInterval(removeParticipants, 15000)
+//setInterval(removeParticipants, 15000)
 
 server.listen(5000, () => {
     console.log("Servidor: http://localhost:5000")
