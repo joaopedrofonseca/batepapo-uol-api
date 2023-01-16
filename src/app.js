@@ -50,9 +50,9 @@ server.post("/participants", async (req, res) => {
                 type: 'status',
                 time: dayjs().format('HH:mm:ss')
             })
-        res.sendStatus(201)
+        return res.sendStatus(201)
     } catch (error) {
-        res.status(500)
+        return res.status(500)
     }
 
 })
@@ -60,9 +60,9 @@ server.post("/participants", async (req, res) => {
 server.get("/participants", async (req, res) => {
     try {
         const participants = await db.collection("participants").find().toArray()
-        res.status(200).send(participants)
+        return res.status(200).send(participants)
     } catch (error) {
-        res.status(500)
+        return res.status(500)
     }
 })
 
@@ -76,7 +76,7 @@ server.post("/messages", async (req, res) => {
         type: joi.any().valid('message', 'private_message').required()
     })
     const validation = messageSchema.validate({ to, text, type })
-    const participants = db.collection("participants").find().toArray()
+    const participants = await db.collection("participants").find().toArray()
     const names = participants.map(p => p.name)
 
     if (validation.error) {
@@ -89,15 +89,17 @@ server.post("/messages", async (req, res) => {
         await db.collection("messages").insertOne(
             { from: user, to, text, type, time: dayjs().format('HH:mm:ss') }
         )
-        res.sendStatus(201)
+        return res.sendStatus(201)
     } catch (err) {
-        res.sendStatus(500)
+        return res.sendStatus(500)
     }
 })
 
 server.get("/messages", async (req, res) => {
     const { limit } = req.query
     const user = req.headers.user
+
+    if (limit < 1 || typeof limit === "string") return res.sendStatus(422)
 
     try {
         const messages = await db.collection("messages").find().toArray()
