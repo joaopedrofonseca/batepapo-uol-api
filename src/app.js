@@ -82,7 +82,7 @@ server.post("/messages", async (req, res) => {
     if (validation.error) {
         const errors = validation.error.details.map((detail) => detail.message)
         return res.status(422).send(errors)
-    } else if (!(user || names.includes(user))){
+    } else if (!user || !names.includes(user)){
         return res.sendStatus(422)
     }
     try {
@@ -96,22 +96,26 @@ server.post("/messages", async (req, res) => {
 })
 
 server.get("/messages", async (req, res) => {
-    const { limit } = req.query
+    const limit = Number(req.query.limit)
     const user = req.headers.user
 
     if (limit < 1 || typeof limit === "string") return res.sendStatus(422)
 
     try {
         const messages = await db.collection("messages").find().toArray()
-        if (user) {
+        const participants = await db.collection("participants").find().toArray()
+        const isNameExist = participants.find(p => p.name === user)
+
+        if (user && isNameExist) {
+            if (limit){
+                const userLimitMessages = messages.filter((m, i) => (m.to === user || m.to === "Todos") && i < limit)
+                return res.status(200).send(userLimitMessages)
+            }
             const userMessages = messages.filter((m) => m.to === user || m.to === "Todos" || m.from === user)
             return res.status(200).send(userMessages)
+        } else if (!user || !isNameExist){
+            return res.sendStatus(422)
         }
-        if (limit && user) {
-            const userLimitMessages = messages.filter((m, i) => (m.to === user || m.to === "Todos") && i < limit)
-            return res.status(200).send(userLimitMessages)
-        }
-        console.log
     } catch (err) {
         res.sendStatus(500)
     }
@@ -152,7 +156,7 @@ async function removeParticipants() {
     }
 }
 
-setInterval(removeParticipants, 15000)
+//setInterval(removeParticipants, 15000)
 
 server.listen(5000, () => {
     console.log("Servidor: http://localhost:5000")
