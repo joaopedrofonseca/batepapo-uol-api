@@ -99,7 +99,7 @@ server.get("/messages", async (req, res) => {
     const limit = Number(req.query.limit)
     const user = req.headers.user
 
-    if (limit < 1 || isNaN(limit)) return res.sendStatus(422)
+    if (limit < 1 || Number.isNaN(limit)) return res.sendStatus(422)
 
     try {
         const messages = await db.collection("messages").find().toArray()
