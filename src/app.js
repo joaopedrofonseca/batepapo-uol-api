@@ -123,6 +123,31 @@ server.post("/status", async (req, res) => {
     }
 })
 
+async function removeParticipants() {
+    try{
+        const participants = await db.collection("participants").find().toArray()
+        let status = Date.now()
+        for (let i = 0; i < participants.length; i++) {
+            if (status - participants[i].lastStatus > 10000){
+                await db.collection("participants").deleteOne({name: participants[i].name})
+                await db.collection("messages").insertOne(
+                    {
+                        from: participants[i].name,
+                        to: "Todos",
+                        text: "sai da sala...",
+                        type: "status",
+                        time: dayjs().format('HH:mm:ss')
+                    }
+                )
+            }
+        }    
+    } catch(err){
+        console.log(err)
+    }
+}
+
+setInterval(removeParticipants, 15000)
+
 server.listen(5000, () => {
     console.log("Servidor: http://localhost:5000")
 })
