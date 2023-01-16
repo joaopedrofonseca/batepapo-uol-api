@@ -103,15 +103,16 @@ server.get("/messages", async (req, res) => {
 
     try {
         const messages = await db.collection("messages").find().toArray()
+        const reversed = messages.reverse()
         const participants = await db.collection("participants").find().toArray()
         const isNameExist = participants.find(p => p.name === user)
 
         if (user && isNameExist) {
             if (limit){
-                const userLimitMessages = messages.filter((m, i) => (m.to === user || m.to === "Todos") && i < limit)
+                const userLimitMessages = reversed.filter((m, i) => (m.to === user || m.to === "Todos") && i < limit)
                 return res.status(200).send(userLimitMessages)
             }
-            const userMessages = messages.filter((m) => m.to === user || m.to === "Todos" || m.from === user)
+            const userMessages = reversed.filter((m) => m.to === user || m.to === "Todos" || m.from === user)
             return res.status(200).send(userMessages)
         } else if (!user || !isNameExist){
             return res.sendStatus(422)
@@ -156,7 +157,7 @@ async function removeParticipants() {
     }
 }
 
-//setInterval(removeParticipants, 15000)
+setInterval(removeParticipants, 15000)
 
 server.listen(5000, () => {
     console.log("Servidor: http://localhost:5000")
